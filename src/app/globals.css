@@ -1,26 +1,109 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --color-brand-50: #fef2f2;
+  --color-brand-100: #fee2e2;
+  --color-brand-200: #fecaca;
+  --color-brand-500: #ef4444;
+  --color-brand-600: #dc2626;
+  --color-brand-700: #b91c1c;
+  --color-brand-800: #991b1b;
+  --color-brand-900: #7f1d1d;
+}
+
+/* Website bán hàng dùng nền trắng cố định cho nhất quán thương hiệu. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  color-scheme: light;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: #f5f5f7;
+  color: #1f2937;
+}
+
+@utility container-x {
+  @apply mx-auto w-full max-w-7xl px-4;
+}
+@utility card {
+  @apply rounded-xl bg-white shadow-sm ring-1 ring-black/5;
+}
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60;
+}
+@utility btn-primary {
+  @apply btn bg-brand-600 text-white hover:bg-brand-700;
+}
+@utility btn-outline {
+  @apply btn border border-brand-600 bg-white text-brand-600 hover:bg-brand-50;
+}
+@utility btn-ghost {
+  @apply btn border border-gray-300 bg-white text-gray-700 hover:bg-gray-50;
+}
+@utility input {
+  @apply w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100;
+}
+@utility label {
+  @apply mb-1 block text-sm font-medium text-gray-700;
+}
+@utility chip {
+  @apply inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1 text-sm text-gray-700 hover:border-brand-500 hover:text-brand-600;
+}
+@utility chip-active {
+  @apply border-brand-600 bg-brand-50 text-brand-700;
+}
+
+/* Nội dung HTML từ CMS (bài viết, mô tả sản phẩm, trang tĩnh) */
+.prose-content {
+  @apply leading-relaxed text-gray-700;
+}
+.prose-content h2 {
+  @apply mt-6 mb-3 text-xl font-bold text-gray-900;
+}
+.prose-content h3 {
+  @apply mt-5 mb-2 text-lg font-semibold text-gray-900;
+}
+.prose-content p {
+  @apply my-3;
+}
+.prose-content ul {
+  @apply my-3 list-disc pl-6;
+}
+.prose-content ol {
+  @apply my-3 list-decimal pl-6;
+}
+.prose-content li {
+  @apply my-1;
+}
+.prose-content a {
+  @apply text-brand-600 underline;
+}
+.prose-content img {
+  @apply my-4 h-auto max-w-full rounded-lg;
+}
+.prose-content blockquote {
+  @apply my-4 border-l-4 border-brand-500 bg-brand-50 px-4 py-2 italic;
+}
+.prose-content code {
+  @apply rounded bg-gray-100 px-1.5 py-0.5 text-sm;
+}
+.prose-content table {
+  @apply my-4 w-full border-collapse text-sm;
+}
+.prose-content td,
+.prose-content th {
+  @apply border border-gray-200 px-3 py-2;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
 }

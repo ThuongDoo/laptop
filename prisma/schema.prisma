@@ -1,0 +1,267 @@
+// SQLite cho dev. Đổi provider sang "postgresql" + DATABASE_URL khi lên production.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Nhân sự & khách hàng ----------
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         String   @default("SALES") // ADMIN | SALES | EDITOR
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  posts        Post[]
+}
+
+model Customer {
+  id           String   @id @default(cuid())
+  name         String
+  phone        String
+  email        String?  @unique
+  passwordHash String?
+  address      String?
+  createdAt    DateTime @default(now())
+  orders       Order[]
+  reviews      Review[]
+
+  @@index([phone])
+}
+
+// ---------- Danh mục & sản phẩm ----------
+
+model Brand {
+  id              String    @id @default(cuid())
+  name            String
+  slug            String    @unique
+  logo            String?
+  sortOrder       Int       @default(0)
+  metaTitle       String?
+  metaDescription String?
+  description     String?
+  products        Product[]
+}
+
+// Danh mục theo nhu cầu: Học tập/Văn phòng, Gaming, Đồ họa, Mỏng nhẹ...
+model Category {
+  id              String    @id @default(cuid())
+  name            String
+  slug            String    @unique
+  icon            String?
+  shortDesc       String?
+  content         String? // HTML mô tả SEO cuối trang danh mục
+  sortOrder       Int       @default(0)
+  showOnHome      Boolean   @default(true)
+  metaTitle       String?
+  metaDescription String?
+  canonical       String?
+  products        Product[]
+}
+
+model Product {
+  id              String           @id @default(cuid())
+  name            String
+  slug            String           @unique
+  sku             String?
+  brandId         String
+  brand           Brand            @relation(fields: [brandId], references: [id])
+  categories      Category[]
+  shortDesc       String?
+  description     String? // HTML
+  // Cấu hình chung (biến thể khác RAM/SSD/giá)
+  cpu             String // "Intel Core i7-1185G7"
+  cpuFamily       String // i3 | i5 | i7 | i9 | r5 | r7 | r9 | m1 | m2 | m3 | other
+  gpu             String
+  gpuType         String           @default("onboard") // onboard | discrete
+  screenSize      Float // 13.3, 14, 15.6...
+  screen          String // "13.4 inch FHD+ 60Hz"
+  weight          String?
+  battery         String?
+  ports           String?
+  os              String?
+  specs           String? // JSON [{label, value}] bổ sung
+  // Tình trạng máy thực tế
+  condition       String           @default("99") // new | 99 | 98 | 95 | 90
+  appearance      String? // Mô tả ngoại hình
+  batteryHealth   String? // "Pin 92%, dùng 4-5h"
+  accessories     String? // "Sạc zin, tặng balo"
+  warrantyMonths  Int              @default(6)
+  // Ưu đãi & trạng thái
+  gifts           String? // mỗi dòng một ưu đãi
+  featured        Boolean          @default(false)
+  published       Boolean          @default(true)
+  soldCount       Int              @default(0)
+  videoUrl        String?
+  // SEO
+  metaTitle       String?
+  metaDescription String?
+  canonical       String?
+  searchText      String           @default("") // không dấu, lowercase — phục vụ tìm kiếm
+  minPrice        Int              @default(0) // cache giá thấp nhất từ biến thể để sắp xếp
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  images          ProductImage[]
+  variants        ProductVariant[]
+  reviews         Review[]
+  orderItems      OrderItem[]
+
+  @@index([published, minPrice])
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  alt       String?
+  sortOrder Int     @default(0)
+}
+
+model ProductVariant {
+  id          String      @id @default(cuid())
+  productId   String
+  product     Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name        String // "16GB / 512GB"
+  ramGB       Int
+  storageGB   Int
+  storageType String      @default("SSD")
+  price       Int // giá niêm yết
+  salePrice   Int? // giá khuyến mãi
+  stockStatus String      @default("IN_STOCK") // IN_STOCK | OUT_OF_STOCK | INCOMING
+  stock       Int         @default(1)
+  sortOrder   Int         @default(0)
+  orderItems  OrderItem[]
+}
+
+model Review {
+  id         String    @id @default(cuid())
+  productId  String
+  product    Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id])
+  name       String
+  phone      String?
+  rating     Int
+  content    String
+  images     String? // JSON string[]
+  approved   Boolean   @default(false)
+  reply      String?
+  createdAt  DateTime  @default(now())
+
+  @@index([productId, approved])
+}
+
+// ---------- Đơn hàng & khuyến mãi ----------
+
+model Order {
+  id             String      @id @default(cuid())
+  code           String      @unique
+  customerId     String?
+  customer       Customer?   @relation(fields: [customerId], references: [id])
+  name           String
+  phone          String
+  email          String?
+  address        String
+  note           String?
+  paymentMethod  String // COD | BANK | VNPAY | INSTALLMENT
+  paymentStatus  String      @default("UNPAID") // UNPAID | PAID
+  status         String      @default("NEW") // NEW | CONFIRMED | SHIPPING | COMPLETED | CANCELLED
+  subtotal       Int
+  shippingFee    Int
+  discount       Int         @default(0)
+  total          Int
+  couponCode     String?
+  installmentNote String?
+  adminNote      String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  items          OrderItem[]
+
+  @@index([status, createdAt])
+}
+
+model OrderItem {
+  id          String          @id @default(cuid())
+  orderId     String
+  order       Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String?
+  product     Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
+  variantId   String?
+  variant     ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  productName String
+  variantName String
+  image       String?
+  price       Int
+  quantity    Int
+}
+
+model Coupon {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  description String?
+  type        String // PERCENT | FIXED | FREESHIP
+  value       Int       @default(0) // % hoặc số tiền
+  maxDiscount Int? // trần giảm cho loại %
+  minOrder    Int       @default(0)
+  usageLimit  Int?
+  usedCount   Int       @default(0)
+  startsAt    DateTime?
+  expiresAt   DateTime?
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+}
+
+// ---------- Nội dung ----------
+
+model Post {
+  id              String   @id @default(cuid())
+  title           String
+  slug            String   @unique
+  excerpt         String?
+  content         String // HTML
+  cover           String?
+  published       Boolean  @default(true)
+  authorId        String?
+  author          User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  metaTitle       String?
+  metaDescription String?
+  canonical       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Trang tĩnh: Giới thiệu, Chính sách bảo hành, Hướng dẫn trả góp, Liên hệ...
+model Page {
+  id              String   @id @default(cuid())
+  title           String
+  slug            String   @unique
+  content         String
+  published       Boolean  @default(true)
+  showInFooter    Boolean  @default(true)
+  metaTitle       String?
+  metaDescription String?
+  canonical       String?
+  updatedAt       DateTime @updatedAt
+}
+
+model Banner {
+  id        String  @id @default(cuid())
+  title     String
+  subtitle  String?
+  image     String
+  link      String?
+  sortOrder Int     @default(0)
+  active    Boolean @default(true)
+}
+
+model Setting {
+  key   String @id
+  value String
+}
